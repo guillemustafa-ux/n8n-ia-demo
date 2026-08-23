@@ -1,0 +1,207 @@
+{
+  "name": "Lead Capture Form → AI Scoring → Sales Alert — Clínica Dental Del Valle",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Clínica Dental Del Valle",
+        "formDescription": "Cuéntanos qué necesitas y te contactamos el mismo día.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Nombre",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "¿Qué tratamiento necesitas?",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Teléfono (WhatsApp)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Lead form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "00000000-0000-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=New lead from website form:\nName: {{ $json.Nombre }}\nEmail: {{ $json.Email }}\nPhone: {{ $json['Teléfono (WhatsApp)'] }}\nMessage: {{ $json['¿Qué tratamiento necesitas?'] }}",
+        "options": {
+          "systemMessage": "You are a lead-qualification assistant for Clínica Dental Del Valle, a dental clinic in Mexico City. Leads come from the clinic's website form and are usually written in Spanish. Read the lead and reply with EXACTLY this format, nothing else:\nSCORE: HOT or WARM or COLD\nSUMMARY: one line in English summarizing who they are, what treatment they want and how urgent it is.\n\nHOT = high-value treatment (implant, orthodontics, crown, several teeth) OR pain/urgency, with real contact details. WARM = genuine interest in a standard treatment (cleaning, whitening, check-up) but no urgency stated. COLD = spam, advertising, or no real treatment need."
+        }
+      },
+      "id": "b1b2c3d4-0002-4000-8000-000000000002",
+      "name": "AI lead scoring",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "id": "b1b2c3d4-0003-4000-8000-000000000003",
+      "name": "Groq Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        192,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "SCORE: HOT",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b1b2c3d4-0004-4000-8000-000000000004",
+      "name": "Hot lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        464,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=🔥 HOT LEAD — reply now!\n\n{{ $('Lead form').item.json.Nombre }} ({{ $('Lead form').item.json.Email }} · {{ $('Lead form').item.json['Teléfono (WhatsApp)'] }})\n\n{{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "b1b2c3d4-0005-4000-8000-000000000005",
+      "name": "Alert sales team",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        704,
+        -96
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "webhookId": "00000000-0000-4000-8000-000000000002"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=📋 New lead logged\n\n{{ $('Lead form').item.json.Nombre }} ({{ $('Lead form').item.json.Email }})\n\n{{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "b1b2c3d4-0006-4000-8000-000000000006",
+      "name": "Log lead",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        704,
+        112
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "webhookId": "00000000-0000-4000-8000-000000000003"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Lead form": {
+      "main": [
+        [
+          {
+            "node": "AI lead scoring",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI lead scoring",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI lead scoring": {
+      "main": [
+        [
+          {
+            "node": "Hot lead?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hot lead?": {
+      "main": [
+        [
+          {
+            "node": "Alert sales team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "tags": []
+}

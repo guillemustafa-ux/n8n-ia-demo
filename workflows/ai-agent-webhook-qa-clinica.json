@@ -1,0 +1,116 @@
+{
+  "name": "AI Agent — Webhook Q&A to Telegram — Asistente Clínica Dental Del Valle",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-the-agent",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Webhook — incoming question",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "00000000-0000-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.question }}",
+        "options": {
+          "systemMessage": "You are the virtual assistant of Clínica Dental Del Valle, a dental clinic in Colonia Del Valle, Mexico City. Answer the patient's question in Spanish (Mexican Spanish, using 'tú'), friendly and concise (max 120 words). Use ONLY this information:\n- Address: Av. Coyoacán 1435, Col. Del Valle, CDMX.\n- Hours: Monday to Friday 9:00–19:00, Saturday 9:00–14:00.\n- First assessment appointment: free.\n- Prices (MXN): dental cleaning $650; whitening $2,900; resin filling $950 per tooth; simple extraction $1,200; orthodontics from $28,000 with monthly plans; dental implant from $14,500 per piece.\n- Appointments: through this chat or by phone.\nIf the question is outside this information, politely say that the front desk will follow up with the details. Never give a medical diagnosis — instead, invite them to the free assessment appointment. Never invent prices or services."
+        }
+      },
+      "id": "a1b2c3d4-0002-4000-8000-000000000002",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "name": "Groq Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        192,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "a1b2c3d4-0004-4000-8000-000000000004",
+      "name": "Send answer to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        464,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "webhookId": "00000000-0000-4000-8000-000000000002"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook — incoming question": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send answer to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "tags": []
+}

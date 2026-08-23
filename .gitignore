@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.*
+*credentials*.json
+.DS_Store
+captures/
+.playwright-mcp/
+
+# internal material — kept local, not published
+CLAUDE.md
+docs/
+demo/guion-loom.md
+demo/leads-demo.md
